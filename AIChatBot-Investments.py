@@ -1,46 +1,102 @@
 from tkinter import *
 from tkinter import ttk
+import re
 import modules.constants as const
 import modules.app as app
 import modules.menu as menu
 import modules.scraper as scraper
 
 context = []
-app.system_message = app.generate_message(
-    const.SYSTEM_ROLE, const.MOOD[const.EXECUTIVE])
-app.messages.append(app.system_message)
+companies = {}
+
+
+def initial_state():
+    context.clear()
+    app.system_message = app.generate_message(
+        const.SYSTEM_ROLE, const.MOOD[const.EXECUTIVE])
+    app.messages.clear()
+    app.messages.append(app.system_message)
+
+
+def set_indicators():
+    currency_values = scraper.get_indicators()
+    dollars = currency_values[0]
+    ufs = currency_values[1]
+    dollars_text = "Estos son los valores del dólar el último mes. "
+    for day in dollars:
+        dollars_text = f"{dollars_text}{day}: {dollars[day]}. "
+    ufs_text = "Estos son los valores de la UF el último mes. "
+    for day in ufs:
+        ufs_text = f"{ufs_text}{day}: {ufs[day]}. "
+    initial_values = dollars_text + ufs_text
+    app.messages.append(app.generate_message(const.USER_ROLE, initial_values))
+    input = "Por favor, dame la bienvenida a la asesoría de inversiones Davy Jones."
+    app.messages.append(app.generate_message(const.USER_ROLE, input))
+    response = app.execute_client()
+    response_message = response.choices[0].message
+    answer = response_message.content.replace("\\n", "\n")
+    context.append(app.generate_message(const.USER_ROLE, input))
+    context.append(app.generate_message(const.ASSISTANT_ROLE, answer))
+
+    text_area.insert(END, f"Chatbot: {answer}\n\n")
+    text_area.see(END)
 
 
 def chatbot_response(user_input):
-    if user_input:
-        if app.change_mood:
-            app.messages[0] = app.system_message
-            app.change_mood = False
-        message = app.generate_message(const.USER_ROLE, user_input)
-        app.messages.append(message)
-        return app.execute_client()
+    if app.change_mood:
+        app.messages[0] = app.system_message
+        app.change_mood = False
+    message = app.generate_message(const.USER_ROLE, user_input)
+    if context:
+        app.messages.append(context[-1])
+    app.messages.append(message)
+    return app.execute_client()
 
 
-def clear_user_input(*args):
+def get_company_stocks(*args):
+    scraper.get_company_stocks()
+
+
+def clear_cache(*args):
     user_in.set("")
+    text_area.delete('1.0', END)
+    initial_state()
 
 
 def send_message(*args):
-    text_area.insert(END, f"(Pensando...)\n\n")
+    user_input = user_in.get()
 
-    user_input = user_in.get().__add__("\n")
+    if not user_input:
+        return
 
-    clear_user_input()
+    pattern = ".*empresa (.*)\s*:"
+    match = re.search(pattern, user_input, re.I)
+
+    if match is not None:
+        company_name = match.group(1)
+        company_info = scraper.get_company_stocks(company_name)
+        if company_info is None:
+            text_area.insert(
+                END, f"Chatbot: No se encontró información sobre {company_name}, por favor intenta con otra empresa.\n\n")
+            text_area.see(END)
+            return
+        companies[company_name] = company_info
+
+        message = app.generate_message(
+            const.USER_ROLE, f"La información financiera de {company_name} es la siguiente: {company_info}")
+        app.messages.append(message)
+
+    text_area.insert(END, f"Usuario: {user_input}\n\n")
+
+    user_in.set("")
 
     response = chatbot_response(user_input)
     response_message = response.choices[0].message
     answer = response_message.content.replace("\\n", "\n")
     context.append(app.generate_message(const.USER_ROLE, user_input))
-    context.append(app.generate_message(
-        response_message.role, answer + "\n\n"))
+    context.append(app.generate_message(const.ASSISTANT_ROLE, answer))
 
-    text_area.insert(END, f"Usuario: {user_input}\n")
-    text_area.insert(END, f"Chatbot: {answer}\n")
+    text_area.insert(END, f"Chatbot: {answer}\n\n")
     text_area.see(END)
 
 
@@ -115,7 +171,7 @@ ttk.Button(main_frame, text="Enviar", command=send_message).grid(
     column=2, row=3)
 
 # Crea el botón para borrar la entrada del usuario.
-ttk.Button(main_frame, text="Borrar", command=clear_user_input).grid(
+ttk.Button(main_frame, text="Reiniciar", command=clear_cache).grid(
     column=3, row=3)
 
 for child in main_frame.winfo_children():
@@ -142,56 +198,9 @@ root.bind("<Return>", send_message)
 #    root, text="Enviar", command=lambda: send_message())
 # send_button.pack()
 
+initial_state()
+set_indicators()
 root.mainloop()
-
-
-def main():
-    # Primera pregunta que se le hace al sistema.
-    content = "Explícame cómo cocinar fideos de arroz con verduras al curry."
-
-    # Genera la estructura del mensaje con el rol de usuario y el contenido del primer mensaje.
-    message = app.generate_message(app.USER_ROLE, content)
-
-    # Agrega el mensaje generado a la lista de mensajes que se enviará a la API.
-    app.messages.append(message)
-
-    # Ejecuta la llamada a la API con los mensajes definidos.
-    completion = app.execute_client(app.messages)
-
-    # Extrae la respuesta del chatbot.
-    answer = completion.choices[0].message
-
-    # Imprime el rol de la respuesta.
-    print(answer.role)
-    print(completion.choices[0].message)
-
-    # Imprime la respuesta del chatbot, formateando los saltos de línea.
-    print(answer.content.replace("\\n", "\n"))
-
-    # Genera nuevo mensaje con la respuesta otorgada por la API.
-    message = app.generate_message(answer.role, answer.content)
-
-    # Añade la respuesta a la lista de mensajes para darle contexto al chatbot sobre el historial de preguntas. Esto afecta a la cantidad de tokens.
-    app.messages.append(message)
-
-    # Segunda pregunta que se le hace al sistema, esperando que mantenga el contexto.
-    content = "Y si en vez de fideos de arroz utilizo quínoa, ¿qué tendría que cambiar?"
-
-    # Genera la estructura del segundo mensaje.
-    message = app.generate_message(app.USER_ROLE, content)
-
-    # Agrega la nueva entrada a la lista de mensajes.
-    app.messages.append(message)
-
-    # Ejecuta la segunda llamada a la API.
-    completion = app.execute_client(app.messages)
-    print(completion)
-
-    # Extrae la respuesta del chatbot
-    answer = completion.choices[0].message
-
-    # Imprime la respuesta del chatbot, formateando los saltos de línea.
-    print(answer.content.replace("\\n", "\n"))
 
 
 # indicators = scraper.get_indicators()
