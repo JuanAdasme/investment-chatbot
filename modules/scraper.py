@@ -11,6 +11,13 @@ from modules.constants import SII_UF_URL, SII_DOLLAR_URL, YAHOO_FINANCE_URL
 
 
 def get_indicators():
+    """Función get_indicators
+
+    Descripción: Llama a la función get_values_from_sii para obtener 
+    los valores del dólar y de la UF.
+    Retorno: Valores de la UF y del dólar obtenidos desde el SII.   list
+    """
+
     indicators_file = open("indicators.txt", "w+", encoding="utf-8")
     options = Options()
     user_agent = UserAgent()
@@ -34,8 +41,18 @@ def get_indicators():
     return currency_values
 
 
-# Obtener valor histórico mensual desde el SII (dólar y UF)
 def get_values_from_sii(driver, url, file):
+    """Función get_values_from_sii
+
+    Descripción: Obtiene el valor del dólar y de la UF desde la página 
+    del SII correspondientes al mes de noviembre de 2023.
+    Parámetros:
+    driver                                                          WebDriver
+    url                                                             string
+    file                                                            TextIOWrapper
+    Retorno: Valores del dólar y de la UF de noviembre de 2023.     dict
+    """
+
     driver.get(url)
     soup = bs(driver.page_source.encode("utf-8"), "html.parser")
     dom = etree.HTML(str(soup))
@@ -56,6 +73,15 @@ def get_values_from_sii(driver, url, file):
 
 
 def get_info_from_news(driver: webdriver.Chrome):
+    """Función get_info_from_news
+
+    Descripción: Realiza un scraping de la página de Yahoo Finance para obtener
+    alguna noticia relacionada a la empresa.
+    Parámetros
+    driver                                                                      WebDriver
+    Retorno: Información de noticias de la empresa o None si no encuentra.      string
+    """
+
     try:
         span = WebDriverWait(driver, 5).until(EC.visibility_of_element_located(
             (By.XPATH, "//span[contains(text(), 'Noticias')]")))
@@ -80,6 +106,15 @@ def get_info_from_news(driver: webdriver.Chrome):
 
 
 def get_company_stocks(company_name):
+    """Función get_company_stocks
+
+    Descripción: Realiza un scraping en la página de Yahoo Finance y obtiene
+    información financiera sobre la empresa entragada por parámetro.
+    Parámetros:
+    company_name                                                        string
+    Retorno: Información financiera sobre la empresa especificada.      dict
+    """
+
     options = Options()
     user_agent = UserAgent()
     random_user_agent = user_agent.random

@@ -10,9 +10,17 @@ context = []
 companies = {}
 assistant = []
 initial_currency_values = None
+selected_mood = const.EXECUTIVE
 
 
 def initial_state():
+    """Función initial_state
+
+    Descripción: Define los valores iniciales para variables globales que
+    sirven para manejar el contexto.
+
+    """
+
     context.clear()
     companies.clear()
     assistant.clear()
@@ -23,6 +31,14 @@ def initial_state():
 
 
 def set_indicators():
+    """Función set_indicators
+
+    Descripción: Llama a la función get_indicators del web scraper, de 
+    donde se obtienen los valores del dólar y la UF y se almacenan en 
+    una variable global. Luego genera el mensaje de bienvenida.
+
+    """
+
     currency_values = scraper.get_indicators()
     dollars = currency_values[0]
     ufs = currency_values[1]
@@ -49,6 +65,16 @@ def set_indicators():
 
 
 def send_to_chatbot(user_input):
+    """Función send_to_chatbot
+
+    Descripción: Verifica el cambio de comportamiento del chatbot, 
+    agrega el contexto y llama al método execute_client, que llama
+    a la API de OpenAI con la entrada del usuario.
+    Parámetros:
+    user_input                              string
+    Retorno: La respuesta del chatbot.      ChatCompletion
+    """
+
     del app.messages[2:]
     if app.change_mood:
         # El primer mensaje es siempre para el comportamiento del bot.
@@ -69,11 +95,15 @@ def send_to_chatbot(user_input):
     return app.execute_client()
 
 
-def get_company_stocks(*args):
-    scraper.get_company_stocks()
-
-
 def clear_cache(*args):
+    """Función clear_cache
+
+    Descripción: Limpia los campos y reinicia el estado de chatbot, 
+    limpiando el historial.
+    Parámetros:
+    *args               Any
+    """
+
     user_in.set("")
     text_area.delete('1.0', END)
     initial_state()
@@ -82,6 +112,16 @@ def clear_cache(*args):
 
 
 def check_company(user_input):
+    """Función check_company
+
+    Descripción: Busca el nombre de una empresa en la entrada del usuario.
+    Si la encuentra, llama a la función get_company_stocks del web scraper
+    para obtener sus datos financieros. Luego lo añade a un diccionario
+    que sirve para entregar datos al contexto.
+    Parámetros:
+    user_input                  string
+    """
+
     # Patrón para buscar el nombre de la empresa en formato 'empresa {nombre}:' o en formato 'empresa "{nombre}"' en mayúsculas o minúsculas.
     pattern = "(?:.*empresa (.*)\s*:)|(?:.*empresa \"(.*)\")"
 
@@ -113,6 +153,15 @@ def check_company(user_input):
 
 
 def fill_context(user_input):
+    """Función fill_context
+
+    Descripción: Define el contexto de una entrada según la entrada del usuario.
+    Si el usuario menciona una empresa que esté en el historial, el contexto 
+    va a almacenar las respuestas del historial relevantes para esa empresa.
+    Parámetros:
+    user_input                      string
+    """
+
     context.clear()
 
     for company in companies:
@@ -135,6 +184,16 @@ def fill_context(user_input):
 
 
 def send_message(*args):
+    """Función send_message
+
+    Descripción: Recibe la entrada del usuario desde la interfaz y se
+    la pasa a la función send_to_chatbot para enviarla al chatbot.
+    También llama a las funciones check_company y fill_context y
+    se encarga de mostrar la respuesta del chatbot en la interfaz.
+    Parámetros:
+    *args                           Any
+    """
+
     user_input = user_in.get()
 
     if not user_input:
@@ -149,17 +208,20 @@ def send_message(*args):
     response = send_to_chatbot(user_input)
     response_message = response.choices[0].message
     answer = response_message.content.replace("\\n", "\n")
-    # context.append(app.generate_message(const.USER_ROLE, user_input))
     assistant.append(answer)
 
     text_area.insert(END, f"Chatbot: {answer}\n\n")
     text_area.see(END)
 
 
-selected_mood = const.EXECUTIVE
-
-
 def set_mood(mood):
+    """Función set_mood
+
+    Descripción: Establece el comportamiento del chatbot.
+    Parámetros:
+    mood                    string
+    """
+
     global selected_mood
     selected_mood = mood
     app.change_mood = True
@@ -168,6 +230,13 @@ def set_mood(mood):
 
 
 def set_executive_mood():
+    """Función set_executive_mood
+
+    Descripción: Establece la variable global que define el
+    comportamiento y el carácter del chatbot. En este caso,
+    se comporta como un ejecutivo asesor de inversiones.
+    """
+
     if selected_mood == const.EXECUTIVE:
         print("Ya soy un ejecutivo de inversiones, señor.")
     else:
@@ -176,6 +245,14 @@ def set_executive_mood():
 
 
 def set_pirate_mood():
+    """Función set_pirate_mood
+
+    Descripción: Establece la variable global que define el
+    comportamiento y el carácter del chatbot. En este caso,
+    se comporta como un pirata. ADVERTENCIA: Puede comportarse
+    de forma grosera, usar con discreción.
+    """
+
     if selected_mood == const.PIRATE:
         print("¡Arr! ¡Ya soy un pirata, marinero de agua dulce!")
     else:
@@ -184,6 +261,13 @@ def set_pirate_mood():
 
 
 def set_romantic_poet_mood():
+    """Función set_romantic_poet_mood
+
+    Descripción: Establece la variable global que define el
+    comportamiento y el carácter del chatbot. En este caso,
+    se comporta como un poeta del siglo XIX.
+    """
+
     if selected_mood == const.POET:
         print("Si pudiese ser otra cosa, algo que tú más quisieras, aquello con gusto sería, ¡pero he nacido poeta!")
     else:
@@ -209,8 +293,8 @@ text_frame.grid(column=1, row=1, columnspan=4, sticky=(N, W, E))
 scrollbar = Scrollbar(text_frame)
 
 # Crea el cuadro de texto donde se mostrarán las interacciones entre el usuario y el chatbot.
-text_area = Text(text_frame, bg="white", width=100,
-                 height=40, yscrollcommand=scrollbar.set)
+text_area = Text(text_frame, bg="white", width=60,
+                 height=20, yscrollcommand=scrollbar.set)
 
 # Configura la barra de desplazamiento.
 scrollbar.config(command=text_area.yview)

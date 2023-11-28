@@ -17,21 +17,25 @@ change_mood = False
 
 
 def generate_message(role, content):
-    """ 
-    Descripción:
-        Genera un nuevo mensaje para añadir a la lista de mensajes del cliente de OpenAI.
+    """Función generate_message
 
+    Descripción: Genera un nuevo mensaje para añadir a la lista de mensajes del cliente de OpenAI.
     Parámetros:
-        role Rol que se le asigna según el remitente del mensaje, que indica si es de sistema, de asistente o de usuario.
-        content Contenido del mensaje, ya sea la entrada del usuario o la respuesta de la API.
-
-    Retorno:
-        Diccionario con el rol y el contenido del mensaje. (Diccionario).
+    role                                                            string
+    content                                                         string
+    Retorno: Diccionario con el rol y el contenido del mensaje.     dict
     """
+
     return {"role": role, "content": content}
 
 
 def execute_client():
+    """Función execute_client
+
+    Descripción: Hace la llamada a la API de OpenAI con la entrada del usuario.
+    Retorno: Respuesta de la API a la entrada del usuario.          ChatCompletion
+    """
+
     completion = client.chat.completions.create(
         model=MODEL,
         messages=messages
