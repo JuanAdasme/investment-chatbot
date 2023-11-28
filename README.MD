@@ -1,7 +1,5 @@
 # AI ChatBot Investments
 
-[TOC]
-
 ## Instalación
 
 - Se recomienda crear un ambiente virtual para evitar conflictos de versiones. En la raíz del proyecto, ejecutar el siguiente comando:
