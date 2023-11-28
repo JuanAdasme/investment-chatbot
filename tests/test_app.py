@@ -1,5 +1,5 @@
-from modules.app import generate_message
 import modules.constants as const
+from modules.app import generate_message
 
 
 def test_message_generation():
@@ -12,4 +12,3 @@ def test_message_generation():
 
     assert expected["role"] == actual["role"]
     assert expected["content"] == actual["content"]
-
