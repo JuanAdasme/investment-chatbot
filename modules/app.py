@@ -31,11 +31,6 @@ def generate_message(role, content):
     return {"role": role, "content": content}
 
 
-def generate_context_message(role, content):
-    return f"{role}: {content}.\n"
-
-
-# Ejecuta la llamada a la API de OpenAI.
 def execute_client():
     completion = client.chat.completions.create(
         model=MODEL,
